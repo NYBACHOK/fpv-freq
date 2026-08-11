@@ -1,12 +1,122 @@
-import { Button, VerticalBox } from "std-widgets.slint";
+import { ScrollView, VerticalBox } from "std-widgets.slint";
 
 export struct Item {
     id: string,
     channel: string,
     frequency: int,
+    conflict: bool,
 }
 
 export component AppWindow inherits Window {
+    title: "FPV Frequency Table";
+    width: 400px;
+    height: 600px;
+    background: #f8fafc;
+
     in-out property <[Item]> model;
+    in-out property <string> statusText: "Tap a channel tile to inspect.";
     
+    callback item-clicked(Item);
+
+    VerticalBox {
+        padding: 16px;
+        spacing: 12px;
+
+        // Title Header
+        Text {
+            text: "FPV Channels";
+            font-size: 22px;
+            font-weight: 700;
+            color: #0f172a;
+            horizontal-alignment: center;
+        }
+
+        // Status Subtitle Bar
+        Rectangle {
+            background: #e2e8f0;
+            border-radius: 8px;
+            height: 32px;
+
+            Text {
+                text: root.statusText;
+                font-size: 13px;
+                color: #475569;
+                vertical-alignment: center;
+                horizontal-alignment: center;
+            }
+        }
+
+        // Scrollable Grid View
+        ScrollView {
+            vertical-stretch: 1;
+
+            GridLayout {
+                spacing: 12px;
+
+                for item[index] in root.model : Rectangle {
+                    col: mod(index, 2);
+                    row: floor(index / 2);
+                    width: 170px;
+                    height: 100px;
+                    border-radius: 12px;
+                    
+                    // Background & border change based on conflict & hover state
+                    background: item.conflict 
+                        ? (touch.has-hover ? #fecdd3 : #ffe4e6) 
+                        : (touch.has-hover ? #e2e8f0 : #ffffff);
+                    
+                    border-width: 1px;
+                    border-color: item.conflict 
+                        ? #f43f5e 
+                        : (touch.has-hover ? #cbd5e1 : #e2e8f0);
+
+                    // Card Layout
+                    VerticalBox {
+                        padding: 12px;
+                        spacing: 4px;
+
+                        HorizontalLayout {
+                            alignment: space-between;
+
+                            Text {
+                                text: item.channel;
+                                font-size: 16px;
+                                font-weight: 700;
+                                color: item.conflict ? #9f1239 : #0f172a;
+                            }
+
+                            // Conflict Status Dot
+                            Rectangle {
+                                width: 10px;
+                                height: 10px;
+                                border-radius: 5px;
+                                background: item.conflict ? #e11d48 : #10b981;
+                            }
+                        }
+
+                        Text {
+                            text: item.frequency + " MHz";
+                            font-size: 13px;
+                            color: item.conflict ? #be123c : #64748b;
+                        }
+
+                        Text {
+                            text: item.conflict ? "Conflict detected" : "Clean channel";
+                            font-size: 11px;
+                            font-weight: 600;
+                            color: item.conflict ? #e11d48 : #059669;
+                        }
+                    }
+
+                    // Click & Touch area
+                    touch := TouchArea {
+                        clicked => {
+                            root.item-clicked(item);
+                            root.statusText = "Selected: " + item.channel + " (" + item.frequency + " MHz)";
+                        }
+                    }
+                }
+            }
+        }
+    }
 }

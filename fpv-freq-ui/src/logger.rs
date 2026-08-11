@@ -19,7 +19,9 @@ pub fn setup_logger() {
                 .add_directive("hyper_util=warn".parse().unwrap())
                 .add_directive("winit=info".parse().unwrap())
                 .add_directive("sctk=info".parse().unwrap())
-                .add_directive("mdns_sd=info".parse().unwrap())
+                .add_directive("naga=info".parse().unwrap())
+                .add_directive("wgpu_hal=info".parse().unwrap())
+                .add_directive("wgpu_core=info".parse().unwrap())
                 .add_directive("reqwest=warn".parse().unwrap()),
         );
 
