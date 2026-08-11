@@ -1,4 +1,3 @@
-// Prevent console window in addition to Slint window in Windows release builds when, e.g., starting the app via file manager. Ignored on other platforms.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use std::{cell::RefCell, collections::HashSet, rc::Rc};
@@ -33,6 +32,7 @@ impl From<ItemModel> for Item {
             channel: channel.to_shared_string(),
             id: id.to_shared_string(),
             conflict: false,
+            selected: false,
         }
     }
 }
@@ -42,8 +42,7 @@ const RAW_JSON: &str = include_str!("../../frequency.json");
 fn main() -> anyhow::Result<()> {
     logger::setup_logger();
 
-    // Standard FPV safe channel separation is 40 MHz (covers 1 MHz to 37 MHz deltas)
-    let resolver = FpvConflictResolver::new(40);
+    let resolver = FpvConflictResolver::new(40); // 40 MHz safe separation
     let active_channel_ids = Rc::new(RefCell::new(HashSet::<String>::new()));
 
     let initial_items = serde_json::from_str::<Vec<ItemModel>>(RAW_JSON)
@@ -52,7 +51,6 @@ fn main() -> anyhow::Result<()> {
         .map(Item::from)
         .collect::<Vec<_>>();
 
-    // Flatten all channels into a lookup list
     let all_channels: Vec<(String, i32)> = initial_items
         .iter()
         .map(|Item { id, frequency, .. }| (id.to_string(), *frequency))
@@ -71,38 +69,54 @@ fn main() -> anyhow::Result<()> {
         let id = clicked_item.id.to_string();
         let mut active_set = active_ids_clone.borrow_mut();
 
-        // Toggle active status
+        // RUST SAFEGUARD: Ignore clicks on conflicting items if not already selected
+        if clicked_item.conflict && !active_set.contains(&id) {
+            if let Some(ui_app) = ui_weak.upgrade() {
+                ui_app.set_statusText(SharedString::from(format!(
+                    "Cannot select {} - frequency conflict detected!",
+                    clicked_item.channel
+                )));
+            }
+            return;
+        }
+
+        // Toggle selection
         if active_set.contains(&id) {
             active_set.remove(&id);
         } else {
             active_set.insert(id);
         }
 
-        // Collect details for active channels
+        // Active channels snapshot
         let active_channels: Vec<(String, i32)> = all_channels
             .iter()
             .filter(|(ch_id, _)| active_set.contains(ch_id))
             .cloned()
             .collect();
 
-        // Calculate incompatible channel IDs across ALL channels
+        // Calculate incompatible channel IDs across all available channels
         let incompatible_ids = resolver.find_incompatible_ids(&all_channels, &active_channels);
 
-        // Update Slint VecModel rows dynamically
+        // Update Slint VecModel rows
         for row in 0..model_clone.row_count() {
             if let Some(mut item) = model_clone.row_data(row) {
                 let item_id = item.id.to_string();
 
-                // Highlight channel if it is incompatible with active selection
-                item.conflict = incompatible_ids.contains(&item_id);
+                let is_selected = active_set.contains(&item_id);
+                let is_incompatible = incompatible_ids.contains(&item_id);
+
+                item.selected = is_selected;
+                // An active item is never marked in conflict with itself
+                item.conflict = !is_selected && is_incompatible;
+
                 model_clone.set_row_data(row, item);
             }
         }
 
-        // Update top status message
+        // Status update
         if let Some(ui_app) = ui_weak.upgrade() {
             let status = format!(
-                "Active Pilots: {} | Incompatible Channels: {}",
+                "Active Pilots: {} | Blocked Channels: {}",
                 active_set.len(),
                 incompatible_ids.len()
             );
