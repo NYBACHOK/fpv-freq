@@ -6,8 +6,15 @@ license = "MIT"
 description = "Calculator of fpv freq conflict"
 
 [dependencies]
-# Enable `gettext` feature if you need localization. Read about localizing slint apps here: https://docs.slint.dev/latest/docs/slint/guide/development/translations/
-# Add android backend for slint: `backend-android-activity-06`
+tracing.workspace = true
+tracing-subscriber = { workspace = true, features = ["env-filter"] }
+serde.workspace = true
+serde_json.workspace = true
+
+anyhow.workspace = true
+
+# Desktop-specific backend
+[target.'cfg(not(target_os = "android"))'.dependencies] 
 slint = { version = "1.15", default-features = false, features = [
     "std",
     "compat-1-2",
@@ -17,12 +24,17 @@ slint = { version = "1.15", default-features = false, features = [
     "log",
     "backend-android-activity-06",
 ] }
-tracing.workspace = true
-tracing-subscriber = { workspace = true, features = ["env-filter"] }
-serde.workspace = true
-serde_json.workspace = true
 
-anyhow.workspace = true
+# Android-specific backend
+[target.'cfg(target_os = "android")'.dependencies] 
+slint = { version = "1.15", default-features = false, features = [
+    "std",
+    "compat-1-2",
+    "renderer-skia",
+    "log",
+    "backend-android-activity-06",
+] }
+
 
 [build-dependencies]
 slint-build = "1.15"
