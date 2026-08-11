@@ -15,6 +15,7 @@ slint = { version = "1.15", default-features = false, features = [
     "renderer-femtovg-wgpu",
     "renderer-software",
     "log",
+    "backend-android-activity-06",
 ] }
 tracing.workspace = true
 tracing-subscriber = { workspace = true, features = ["env-filter"] }
@@ -25,3 +26,10 @@ anyhow.workspace = true
 
 [build-dependencies]
 slint-build = "1.15"
+
+[package.metadata.android]
+package = "com.ghuba.fpv.freqapp"
+label = "FPV Freq App"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
