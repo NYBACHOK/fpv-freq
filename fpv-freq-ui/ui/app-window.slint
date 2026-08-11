@@ -1,4 +1,4 @@
-import { ScrollView, VerticalBox } from "std-widgets.slint";
+import { VerticalBox } from "std-widgets.slint";
 
 export struct Item {
     id: string,
@@ -16,7 +16,7 @@ export component AppWindow inherits Window {
 
     in-out property <[Item]> model;
     in-out property <string> statusText: "Tap a channel tile to select.";
-    
+
     callback item-clicked(Item);
 
     VerticalBox {
@@ -46,30 +46,41 @@ export component AppWindow inherits Window {
             }
         }
 
-        ScrollView {
+        // Touch-enabled scrolling container
+        Flickable {
             vertical-stretch: 1;
+            interactive: true;
 
             GridLayout {
                 spacing: 12px;
+                padding-bottom: 16px;
 
-                for item[index] in root.model : Rectangle {
+                for item[index] in root.model: Rectangle {
                     col: mod(index, 2);
                     row: floor(index / 2);
-                    width: 170px;
+                    width: 154px;
                     height: 100px;
                     border-radius: 12px;
-                    
-                    // Card background styling based on state: Selected > Conflict > Default
-                    background: item.selected 
-                        ? #dbeafe 
-                        : (item.conflict 
-                            ? #fef2f2 
-                            : (touch.has-hover ? #e2e8f0 : #ffffff));
-                    
+
+                    background: item.selected
+                        ? #dbeafe
+                        : (item.conflict
+                        ? #fef2f2
+                        : (card-touch.has-hover ? #e2e8f0 : #ffffff));
+
                     border-width: item.selected ? 2px : 1px;
-                    border-color: item.selected 
-                        ? #2563eb 
+                    border-color: item.selected
+                        ? #2563eb
                         : (item.conflict ? #fca5a5 : #e2e8f0);
+
+                    // Touch Area set to yield dragging events up to parent Flickable
+                    card-touch := TouchArea {
+                        enabled: !item.conflict || item.selected;
+
+                        clicked => {
+                            root.item-clicked(item);
+                        }
+                    }
 
                     VerticalBox {
                         padding: 12px;
@@ -82,18 +93,17 @@ export component AppWindow inherits Window {
                                 text: item.channel;
                                 font-size: 16px;
                                 font-weight: 700;
-                                color: item.selected 
-                                    ? #1e40af 
+                                color: item.selected
+                                    ? #1e40af
                                     : (item.conflict ? #991b1b : #0f172a);
                             }
 
-                            // Indicator Badge
                             Rectangle {
                                 width: 10px;
                                 height: 10px;
                                 border-radius: 5px;
-                                background: item.selected 
-                                    ? #2563eb 
+                                background: item.selected
+                                    ? #2563eb
                                     : (item.conflict ? #ef4444 : #10b981);
                             }
                         }
@@ -101,30 +111,20 @@ export component AppWindow inherits Window {
                         Text {
                             text: item.frequency + " MHz";
                             font-size: 13px;
-                            color: item.selected 
-                                ? #1d4ed8 
+                            color: item.selected
+                                ? #1d4ed8
                                 : (item.conflict ? #991b1b : #64748b);
                         }
 
                         Text {
-                            text: item.selected 
-                                ? "Active" 
+                            text: item.selected
+                                ? "Active"
                                 : (item.conflict ? "Blocked (Conflict)" : "Available");
                             font-size: 11px;
                             font-weight: 600;
-                            color: item.selected 
-                                ? #1d4ed8 
+                            color: item.selected
+                                ? #1d4ed8
                                 : (item.conflict ? #dc2626 : #059669);
-                        }
-                    }
-
-                    // SAFEGUARD: Disable touch interaction if in conflict (unless currently selected to allow deselect)
-                    touch := TouchArea {
-                        enabled: !item.conflict || item.selected;
-                        mouse-cursor: (!item.conflict || item.selected) ? pointer : default;
-
-                        clicked => {
-                            root.item-clicked(item);
                         }
                     }
                 }
