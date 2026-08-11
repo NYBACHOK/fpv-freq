@@ -1,0 +1,27 @@
+[package]
+name = "fpv-freq-ui"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+description = "Calculator of fpv freq conflict"
+
+[dependencies]
+# Enable `gettext` feature if you need localization. Read about localizing slint apps here: https://docs.slint.dev/latest/docs/slint/guide/development/translations/
+# Add android backend for slint: `backend-android-activity-06`
+slint = { version = "1.15", default-features = false, features = [
+    "std",
+    "compat-1-2",
+    "backend-winit",
+    "renderer-femtovg-wgpu",
+    "renderer-software",
+    "log",
+] }
+tracing.workspace = true
+tracing-subscriber = { workspace = true, features = ["env-filter"] }
+serde.workspace = true
+serde_json.workspace = true
+
+anyhow.workspace = true
+
+[build-dependencies]
+slint-build = "1.15"

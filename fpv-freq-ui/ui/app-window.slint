@@ -1,0 +1,12 @@
+import { Button, VerticalBox } from "std-widgets.slint";
+
+export struct Item {
+    id: string,
+    channel: string,
+    frequency: int,
+}
+
+export component AppWindow inherits Window {
+    in-out property <[Item]> model;
+    
+}
